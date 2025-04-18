@@ -7,6 +7,11 @@ const PORT = process.env.PORT || 3000;
 // Middleware to parse JSON data
 app.use(bodyParser.json());
 
+// Root route to handle GET requests
+app.get('/', (req, res) => {
+    res.send('Server is running and ready to receive data.');
+});
+
 // Endpoint to receive data from ESP32
 app.post('/robot-position', (req, res) => {
     const { position } = req.body;
