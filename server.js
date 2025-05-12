@@ -1,6 +1,7 @@
 // server.js
 import express from 'express';
 import expressWs from 'express-ws';
+import WebSocket from 'ws';
 
 const app = express();
 expressWs(app);
@@ -34,8 +35,6 @@ publishers.forEach(pubWs => {
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => console.log(`Render server listening on :${PORT}`));
-
-const WebSocket = require('ws');
 
 const ws = new WebSocket('wss://your-render-server.onrender.com/publish');
 
