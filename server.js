@@ -34,3 +34,21 @@ publishers.forEach(pubWs => {
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => console.log(`Render server listening on :${PORT}`));
+
+const WebSocket = require('ws');
+
+const ws = new WebSocket('wss://your-render-server.onrender.com/publish');
+
+ws.on('open', () => {
+    console.log('Connected to the WebSocket server');
+    // Send data to the server
+    ws.send('Hello from the publisher!');
+});
+
+ws.on('message', (data) => {
+    console.log('Received:', data);
+});
+
+ws.on('close', () => {
+    console.log('Connection closed');
+});
