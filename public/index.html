@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Jetson Nano Stream</title>
+</head>
+<body>
+  <h2>📡 Jetson Nano Live Stream</h2>
+  <img id="stream" width="720" />
+  <br />
+  <button onclick="capture()">📸 Capture Image</button>
+  <a id="downloadLink" style="display: none;">Download Captured Image</a>
+
+  <script>
+    const img = document.getElementById('stream');
+    const downloadLink = document.getElementById('downloadLink');
+    const ws = new WebSocket("wss://digitwin-1.onrender.com/subscribe");
+
+    ws.binaryType = "arraybuffer";
+    ws.onmessage = (event) => {
+      const blob = new Blob([event.data], { type: 'image/jpeg' });
+      img.src = URL.createObjectURL(blob);
+    };
+
+    function capture() {
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      context.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      canvas.toBlob(function(blob) {
+        const url = URL.createObjectURL(blob);
+        downloadLink.href = url;
+        downloadLink.download = 'captured_frame.jpg';
+        downloadLink.textContent = '⬇️ Download captured image';
+        downloadLink.style.display = 'inline';
+      }, 'image/jpeg');
+    }
+  </script>
+</body>
+</html>

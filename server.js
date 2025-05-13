@@ -1,44 +1,41 @@
 import express from 'express';
 import expressWs from 'express-ws';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import WebSocket from 'ws';
 
 const app = express();
 expressWs(app);
 
-const publishers = new Set();     // usually 1 device
-const subscribers = new Set();    // 0..N viewers
+// Serve the index.html page
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+app.use(express.static(path.join(__dirname, 'public')));
 
-// Publisher WebSocket endpoint (e.g., Jetson camera)
+// WebSocket sets
+const publishers = new Set();
+const subscribers = new Set();
+
 app.ws('/publish', (ws, req) => {
-  console.log('[Publisher] connected');
   publishers.add(ws);
+  ws.on('close', () => publishers.delete(ws));
+});
 
-  ws.on('message', (msg) => {
-    // Broadcast this frame to all subscribers
-    for (const sub of subscribers) {
+app.ws('/subscribe', (ws, req) => {
+  subscribers.add(ws);
+  ws.on('close', () => subscribers.delete(ws));
+});
+
+// Relay messages
+publishers.forEach(pubWs => {
+  pubWs.on('message', (msg) => {
+    for (let sub of subscribers) {
       if (sub.readyState === sub.OPEN) {
         sub.send(msg);
       }
     }
   });
-
-  ws.on('close', () => {
-    console.log('[Publisher] disconnected');
-    publishers.delete(ws);
-  });
-});
-
-// Subscriber WebSocket endpoint (e.g., browser client)
-app.ws('/subscribe', (ws, req) => {
-  console.log('[Subscriber] connected');
-  subscribers.add(ws);
-
-  ws.on('close', () => {
-    console.log('[Subscriber] disconnected');
-    subscribers.delete(ws);
-  });
 });
 
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
-  console.log(`✅ Server running at http://localhost:${PORT}`);
-});
+app.listen(PORT, () => console.log(`✅ Server running on :${PORT}`));
