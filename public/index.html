@@ -1,41 +1,52 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Jetson Nano Stream</title>
+  <meta charset="UTF-8">
+  <title>Jetson Stream Viewer</title>
+  <style>
+    video, canvas { display: block; margin: 10px auto; max-width: 100%; }
+    #downloadLink { display: block; text-align: center; margin-top: 10px; }
+    button { display: block; margin: 10px auto; padding: 10px 20px; font-size: 16px; }
+  </style>
 </head>
 <body>
-  <h2>📡 Jetson Nano Live Stream</h2>
-  <img id="stream" width="720" />
-  <br />
-  <button onclick="capture()">📸 Capture Image</button>
-  <a id="downloadLink" style="display: none;">Download Captured Image</a>
+
+  <h2 style="text-align:center;">Jetson Nano Live Stream</h2>
+  <img id="videoFrame" src="" alt="Live Stream" style="display:block; margin:auto; max-width:100%;"/>
+  <button id="captureBtn">📸 Capture Image</button>
+  <a id="downloadLink" style="display:none;" download="capture.jpg">⬇️ Download captured image</a>
+
+  <canvas id="canvas" style="display:none;"></canvas>
 
   <script>
-    const img = document.getElementById('stream');
+    const socket = new WebSocket("wss://digitwin-1.onrender.com/subscribe");
+    const videoFrame = document.getElementById('videoFrame');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const captureBtn = document.getElementById('captureBtn');
     const downloadLink = document.getElementById('downloadLink');
-    const ws = new WebSocket("wss://digitwin-1.onrender.com/subscribe");
 
-    ws.binaryType = "arraybuffer";
-    ws.onmessage = (event) => {
-      const blob = new Blob([event.data], { type: 'image/jpeg' });
-      img.src = URL.createObjectURL(blob);
+    socket.binaryType = 'blob';
+
+    socket.onmessage = (event) => {
+      const blob = event.data;
+      const url = URL.createObjectURL(blob);
+      videoFrame.src = url;
     };
 
-    function capture() {
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext('2d');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      context.drawImage(img, 0, 0, canvas.width, canvas.height);
+    captureBtn.onclick = () => {
+      // Set canvas size to image size
+      canvas.width = videoFrame.naturalWidth;
+      canvas.height = videoFrame.naturalHeight;
 
-      canvas.toBlob(function(blob) {
+      ctx.drawImage(videoFrame, 0, 0);
+      canvas.toBlob((blob) => {
         const url = URL.createObjectURL(blob);
         downloadLink.href = url;
-        downloadLink.download = 'captured_frame.jpg';
-        downloadLink.textContent = '⬇️ Download captured image';
-        downloadLink.style.display = 'inline';
+        downloadLink.style.display = 'block';
       }, 'image/jpeg');
-    }
+    };
   </script>
+
 </body>
 </html>
