@@ -1,53 +1,44 @@
-// server.js
 import express from 'express';
 import expressWs from 'express-ws';
-import WebSocket from 'ws';
 
 const app = express();
 expressWs(app);
 
-const publishers = new Set();  // should be just one in your case
-const subscribers = new Set();
+const publishers = new Set();     // usually 1 device
+const subscribers = new Set();    // 0..N viewers
 
-// Endpoint for your Jetson to publish into:
+// Publisher WebSocket endpoint (e.g., Jetson camera)
 app.ws('/publish', (ws, req) => {
+  console.log('[Publisher] connected');
   publishers.add(ws);
-  ws.on('close', () => publishers.delete(ws));
-});
 
-// Endpoint for browsers to subscribe:
-app.ws('/subscribe', (ws, req) => {
-  subscribers.add(ws);
-  ws.on('close', () => subscribers.delete(ws));
-});
-
-// Relay loop: whenever a publisher sends a frame, broadcast to subs
-publishers.forEach(pubWs => {
-  pubWs.on('message', (msg) => {
-    // msg is a Buffer containing JPEG bytes
-    for (let sub of subscribers) {
+  ws.on('message', (msg) => {
+    // Broadcast this frame to all subscribers
+    for (const sub of subscribers) {
       if (sub.readyState === sub.OPEN) {
         sub.send(msg);
       }
     }
   });
+
+  ws.on('close', () => {
+    console.log('[Publisher] disconnected');
+    publishers.delete(ws);
+  });
+});
+
+// Subscriber WebSocket endpoint (e.g., browser client)
+app.ws('/subscribe', (ws, req) => {
+  console.log('[Subscriber] connected');
+  subscribers.add(ws);
+
+  ws.on('close', () => {
+    console.log('[Subscriber] disconnected');
+    subscribers.delete(ws);
+  });
 });
 
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => console.log(`Render server listening on :${PORT}`));
-
-const ws = new WebSocket('wss://your-render-server.onrender.com/publish');
-
-ws.on('open', () => {
-    console.log('Connected to the WebSocket server');
-    // Send data to the server
-    ws.send('Hello from the publisher!');
-});
-
-ws.on('message', (data) => {
-    console.log('Received:', data);
-});
-
-ws.on('close', () => {
-    console.log('Connection closed');
+app.listen(PORT, () => {
+  console.log(`✅ Server running at http://localhost:${PORT}`);
 });
