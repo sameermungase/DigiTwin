@@ -1,6 +1,15 @@
 {
+  "name": "digi-twin",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=16"
+  },
   "dependencies": {
-    "express": "^5.1.0",
+    "express": "^4.18.2",
     "express-ws": "^5.0.2"
   },
   "type": "module"
